@@ -1,5 +1,5 @@
 interface Account {
-    id: number;
+    id: string;
     ownerId: string;
     currency: string;
     balance: number;
@@ -7,10 +7,10 @@ interface Account {
   }
   
   let accounts: Account[] = [
-    { id: 1, ownerId: "1", currency: "USD", balance: 1000, name: 'User1' },
-    { id: 2, ownerId: "2", currency: "EUR", balance: 500, name: 'User2' },
-    { id: 3, ownerId: "3", currency: "EUR", balance: 5000, name: 'User3' },
-    { id: 4, ownerId: "3", currency: "USD", balance: 50, name: 'User4' }
+    { id: '1', ownerId: "1", currency: "USD", balance: 1000, name: 'User1' },
+    { id:'2' , ownerId: "2", currency: "EUR", balance: 500, name: 'User2' },
+    { id: '3', ownerId: "3", currency: "EUR", balance: 5000, name: 'User3' },
+    { id: '4', ownerId: "3", currency: "USD", balance: 50, name: 'User4' }
   ];
   
   export const getAccounts = async (): Promise<Account[]> => {
@@ -27,9 +27,14 @@ interface Account {
   export const createAccount = async (newAccount: Partial<Account>): Promise<Account> => {
     try {
       await new Promise(resolve => setTimeout(resolve, 500));
-      const id = accounts.length + 1;
-      const account = { id, ...newAccount } as Account;
-      accounts.push(account);
+  
+      const account = { ...newAccount } as Account; // Ensure the type is Account
+      console.log(account);
+      
+      // Create a new array with the updated account
+      const updatedAccounts = [...accounts, account]; 
+  
+      // Return the updated account
       return account;
     } catch (error) {
       console.error("Error creating account:", error);
@@ -37,7 +42,7 @@ interface Account {
     }
   };
   
-  export const editAccount = async (accountId: number, updatedAccount: Partial<Account>): Promise<Account> => {
+  export const editAccount = async (accountId: string, updatedAccount: Partial<Account>): Promise<Account> => {
     try {
       await new Promise(resolve => setTimeout(resolve, 500));
       const index = accounts.findIndex(account => account.id === accountId);

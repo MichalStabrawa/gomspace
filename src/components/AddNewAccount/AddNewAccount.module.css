@@ -1,0 +1,18 @@
+.create_account {
+  padding-top: 40px;
+  border-top: 1px solid grey;
+}
+
+.button {
+  height: 40px;
+  background-color: green;
+  min-width: 100px;
+  border-radius: 8px;
+  border-color: #fff;
+  font-size: 18px;
+  color: #fff;
+}
+
+.button:disabled {
+  opacity: 0.5;
+}

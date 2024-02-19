@@ -32,5 +32,11 @@
 
 .main {
   max-width: 1200px;
-  margin:0 auto
+  margin:0 auto;
+}
+
+.input {
+  height: 35px;
+  border-radius: 8px;
+  margin:5px
 }
