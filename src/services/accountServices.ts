@@ -1,3 +1,5 @@
+//account services
+
 interface Account {
     id: string;
     ownerId: string;
@@ -28,13 +30,13 @@ interface Account {
     try {
       await new Promise(resolve => setTimeout(resolve, 500));
   
-      const account = { ...newAccount } as Account; // Ensure the type is Account
+      const account = { ...newAccount } as Account;
       console.log(account);
       
-      // Create a new array with the updated account
+    
       const updatedAccounts = [...accounts, account]; 
   
-      // Return the updated account
+   
       return account;
     } catch (error) {
       console.error("Error creating account:", error);
@@ -58,14 +60,13 @@ interface Account {
     }
   };
   export const deleteAccountAPI = async (accountId: string): Promise<void> => {
+    console.log('Services deleted')
+    console.log(accountId)
     try {
       await new Promise(resolve => setTimeout(resolve, 500));
-      const index = accounts.findIndex(account => account.id === accountId);
-      if (index !== -1) {
-        accounts.splice(index, 1);
-      } else {
-        throw new Error('Account not found');
-      }
+      // Create a new array excluding the account with the specified ID
+      accounts = accounts.filter(account => account.id !== accountId);
+   
     } catch (error) {
       console.error("Error deleting account:", error);
       throw error;

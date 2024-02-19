@@ -10,7 +10,7 @@ import AccountModal from "./ModalAccount/ModalAccount";
 
 const AccountUserList: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
-  const { accounts, loading, error } = useSelector(
+  const { accounts, loading, error,status } = useSelector(
     (state: RootState) => state.account
   );
   const [newAccountData, setNewAccountData] = useState<Partial<Account>>({
@@ -18,10 +18,18 @@ const AccountUserList: React.FC = () => {
     balance: 0,
     currency: "",
   });
+  const [editData,setEditData]= useState<Partial<Account>>({
+    name: "",
+    balance: 0,
+    currency: "",
+    id:''
+  })
 
   const [isOpen,setIsOpen] = useState(false)
   console.log("Acounts");
   console.log(accounts);
+
+  console.log('STATUS' +" "+ status)
 
   useEffect(() => {
     dispatch(fetchAccounts());
@@ -38,9 +46,15 @@ const AccountUserList: React.FC = () => {
     }
   };
 
-  const openModal = ()=> {
-    setIsOpen(true)
-  }
+  const openModal = (e: React.MouseEvent<HTMLButtonElement>) => {
+    const target = e.target as HTMLButtonElement;
+    const id = target.id;
+    const editDataItem = accounts.find(el => el.id === id); 
+    if (editDataItem) {
+      setEditData(editDataItem); 
+      setIsOpen(true);
+    }
+  };
 
   const closeModal=()=> {
     setIsOpen(false)
@@ -54,8 +68,7 @@ const AccountUserList: React.FC = () => {
     }));
   };
 
-  if (loading) return <div>Loading...</div>;
-  if (error) return <div>Error: {error}</div>;
+
 
   return (
     <div className={classes.wrapper}>
@@ -66,7 +79,7 @@ const AccountUserList: React.FC = () => {
             accounts.map((el) => (
               <li key={el.id}>
                 {el.name} {el.balance} {el.currency}
-                <button onClick={()=>setIsOpen(true)}>Edit</button>
+                <button onClick={openModal} id={el.id}>Edit</button>
               </li>
             ))}
         </ul>
@@ -81,9 +94,9 @@ const AccountUserList: React.FC = () => {
         }}
       />
       <AccountModal account={{
-        id:newAccountData.id!,
-          name: newAccountData.name!,
-          balance: newAccountData.balance!,
+        id:editData.id!,
+          name: editData.name!,
+          balance: editData.balance!,
          
         }} isOpen={isOpen} onClose={closeModal}/>
        

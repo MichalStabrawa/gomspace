@@ -13,36 +13,31 @@ interface AccountProps {
 }
 
 const AccountModal = ({ account, isOpen, onClose }: AccountProps) => {
-  const [editedName, setEditedName] = useState(account.name);
-  const [editedBalance, setEditedBalance] = useState(account.balance);
-  const [transferAmount, setTransferAmount] = useState(0);
-  const [recipientAccountId, setRecipientAccountId] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false); // Track the deletion state locally
 
   const dispatch = useDispatch();
 
   const handleDelete = async () => {
+    setIsDeleting(true); // Set local loading state to true immediately
     try {
       await dispatch(deleteAccount(account.id) as any); // Dispatch deleteAccount without waiting for its completion
       onClose();
     } catch (error) {
       console.error('Error deleting account:', error);
+    } finally {
+      setIsDeleting(false); // Reset local loading state after deletion attempt
     }
   };
+  console.log('isDeleting')
+  console.log(isDeleting)
 
   return (
     <div className={`modal ${isOpen ? 'show' : 'hide'}`}>
       <div className="modal-content">
         <span className="close" onClick={onClose}>&times;</span>
         <h2>Account Details</h2>
-        <p>Name: <input type="text" value={editedName} onChange={(e) => setEditedName(e.target.value)} /></p>
-        <p>Balance: <input type="number" value={editedBalance} onChange={(e) => setEditedBalance(parseFloat(e.target.value))} /></p>
-      
-        <button onClick={handleDelete}>Delete</button>
-        <hr />
-        <h2>Transfer Balance</h2>
-        <p>Recipient Account ID: <input type="text" value={recipientAccountId} onChange={(e) => setRecipientAccountId(e.target.value)} /></p>
-        <p>Amount: <input type="number" value={transferAmount} onChange={(e) => setTransferAmount(parseFloat(e.target.value))} /></p>
- 
+        <p>{account.name} {account.balance}</p>
+        <button onClick={handleDelete} disabled={isDeleting}>{isDeleting ? 'Deleting...' : 'Delete'}</button>
       </div>
     </div>
   );
