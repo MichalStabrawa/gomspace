@@ -6,6 +6,7 @@ import { Account } from "../types/types";
 import classes from "./AccountUserList.module.scss";
 import { v4 as uuidv4 } from "uuid";
 import AddNewAccount from "./AddNewAccount/AddNewAccount";
+import AccountModal from "./ModalAccount/ModalAccount";
 
 const AccountUserList: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -17,6 +18,8 @@ const AccountUserList: React.FC = () => {
     balance: 0,
     currency: "",
   });
+
+  const [isOpen,setIsOpen] = useState(false)
   console.log("Acounts");
   console.log(accounts);
 
@@ -34,6 +37,14 @@ const AccountUserList: React.FC = () => {
       setNewAccountData({ name: "", balance: 0, currency: "", ownerId: "" });
     }
   };
+
+  const openModal = ()=> {
+    setIsOpen(true)
+  }
+
+  const closeModal=()=> {
+    setIsOpen(false)
+  }
 
   const handleCreateUserAccount = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -55,6 +66,7 @@ const AccountUserList: React.FC = () => {
             accounts.map((el) => (
               <li key={el.id}>
                 {el.name} {el.balance} {el.currency}
+                <button onClick={()=>setIsOpen(true)}>Edit</button>
               </li>
             ))}
         </ul>
@@ -68,6 +80,13 @@ const AccountUserList: React.FC = () => {
           currency: newAccountData.currency!,
         }}
       />
+      <AccountModal account={{
+        id:newAccountData.id!,
+          name: newAccountData.name!,
+          balance: newAccountData.balance!,
+         
+        }} isOpen={isOpen} onClose={closeModal}/>
+       
     </div>
   );
 };

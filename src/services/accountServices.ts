@@ -57,6 +57,20 @@ interface Account {
       throw error;
     }
   };
+  export const deleteAccountAPI = async (accountId: string): Promise<void> => {
+    try {
+      await new Promise(resolve => setTimeout(resolve, 500));
+      const index = accounts.findIndex(account => account.id === accountId);
+      if (index !== -1) {
+        accounts.splice(index, 1);
+      } else {
+        throw new Error('Account not found');
+      }
+    } catch (error) {
+      console.error("Error deleting account:", error);
+      throw error;
+    }
+  };
   
   export const searchAccounts = async (searchTerm: string): Promise<Account[]> => {
     try {

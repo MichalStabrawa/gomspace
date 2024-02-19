@@ -1,6 +1,6 @@
 // accountReducersSlice.ts
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import { getAccounts, createAccount as createAccountAPI, editAccount as editAccountAPI } from '../services/accountServices';
+import { getAccounts, createAccount as createAccountAPI, editAccount as editAccountAPI,deleteAccountAPI} from '../services/accountServices';
 import { Account } from '../types/types';
 
 interface AccountState {
@@ -30,6 +30,26 @@ export const createAccount = createAsyncThunk('account/createAccount', async (ne
 export const editAccount = createAsyncThunk('account/editAccount', async ({ accountId, updatedAccount }: { accountId: string, updatedAccount: Partial<Account> }) => {
   return await editAccountAPI(accountId, updatedAccount);
 });
+
+
+export const deleteAccount = createAsyncThunk<void, string>(
+  'account/deleteAccount',
+  async (accountId: string) => {
+    try {
+      await deleteAccountAPI(accountId); // Call your API function to delete the account
+    } catch (error) {
+      console.error('Error deleting account:', error);
+      throw error;
+    }
+  }
+);
+
+export const transferBalance = createAsyncThunk<void, { fromAccountId: string; toAccountId: string; amount: number }>(
+  'account/transferBalance',
+  async ({ fromAccountId, toAccountId, amount }) => {
+    // Your transfer balance logic here
+  }
+);
 
 const accountSlice = createSlice({
   name: 'account',
@@ -75,6 +95,36 @@ const accountSlice = createSlice({
       })
       .addCase(editAccount.rejected, (state, action) => {
         state.error = action.error.message ?? 'An error occurred while editing the account';
+      })
+      .addCase(deleteAccount.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(deleteAccount.fulfilled, (state, action) => {
+        if (action.payload !== undefined) {
+          const accountId = action.payload as string;
+          state.loading = false;
+          state.error = null;
+          state.accounts = state.accounts.filter(account => account.id !== accountId);
+        } else {
+          state.error = 'No account ID provided';
+        }
+      })
+      .addCase(deleteAccount.rejected, (state, action) => {
+        state.error = action.error.message ?? 'An error occurred while deleting the account';
+      })
+      // Transfer balance
+      .addCase(transferBalance.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(transferBalance.fulfilled, (state, action) => {
+        // Handle the fulfilled action accordingly
+        state.loading = false;
+        state.error = null;
+      })
+      .addCase(transferBalance.rejected, (state, action) => {
+        state.error = action.error.message ?? 'An error occurred while transferring balance';
       });
   },
 });
@@ -82,4 +132,4 @@ const accountSlice = createSlice({
 export default accountSlice.reducer;
 
 // Exporting action creators
-export const { } = accountSlice.actions;
+export const accountActions = accountSlice.actions;
