@@ -7,6 +7,7 @@ import {
   deleteAccountAPI,
 } from "../services/accountServices";
 import { Account } from "../types/types";
+import { RootState } from "./store";
 
 interface AccountState {
   accounts: Account[];
@@ -19,7 +20,7 @@ const initialState: AccountState = {
   accounts: [],
   loading: false,
   error: null,
-  status: 'init', // Initialize status
+  status: "init", // Initialize status
 };
 
 // Redux Thunks
@@ -42,8 +43,16 @@ export const createAccount = createAsyncThunk(
 // Edit account
 export const editAccount = createAsyncThunk(
   "account/editAccount",
-  async ({ accountId, updatedAccount }: { accountId: string; updatedAccount: Partial<Account> }) => {
-    return await editAccountAPI(accountId, updatedAccount);
+  async (
+    {
+      accountId,
+      updatedAccount,
+    }: { accountId: string; updatedAccount: Partial<Account> },
+    { getState }
+  ) => {
+    console.log("Editing account:", accountId, updatedAccount);
+    const stateAccount = (getState() as RootState).account.accounts;
+    return await editAccountAPI(accountId, updatedAccount, stateAccount);
   }
 );
 
@@ -51,10 +60,9 @@ export const editAccount = createAsyncThunk(
 export const deleteAccount = createAsyncThunk<void, string>(
   "account/deleteAccount",
   async (accountId: string) => {
-    console.log('thunk' + accountId)
+    console.log("thunk" + accountId);
     try {
       await deleteAccountAPI(accountId);
- 
     } catch (error) {
       console.error("Error deleting account:", error);
       throw error;
@@ -82,74 +90,87 @@ const accountSlice = createSlice({
       .addCase(fetchAccounts.pending, (state) => {
         state.loading = true;
         state.error = null;
-        state.status = 'pending';
+        state.status = "pending";
       })
       .addCase(
         fetchAccounts.fulfilled,
         (state, action: PayloadAction<Account[]>) => {
           state.loading = false;
           state.accounts = action.payload;
-          state.status = 'fulfilled';
+          state.status = "fulfilled";
         }
       )
       .addCase(fetchAccounts.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.error.message ?? "An error occurred while fetching accounts";
-        state.status = 'rejected';
+        state.error =
+          action.error.message ?? "An error occurred while fetching accounts";
+        state.status = "rejected";
       })
       // Create account
       .addCase(createAccount.pending, (state) => {
         state.loading = true;
         state.error = null;
-        state.status = 'pending';
+        state.status = "pending";
       })
       .addCase(
         createAccount.fulfilled,
         (state, action: PayloadAction<Account>) => {
+          const newAccount = action.payload;
+          console.log(`CreateAccount: ${newAccount}`);
+          // Update the state by adding the new account to the accounts array
+          state.accounts = [...state.accounts, newAccount];
           state.loading = false;
           state.error = null;
-          state.accounts = [...state.accounts, action.payload];
-          state.status = 'fulfilled';
+          state.status = "fulfilled";
         }
       )
       .addCase(createAccount.rejected, (state, action) => {
-        state.error = action.error.message ?? "An error occurred while creating the account";
-        state.status = 'rejected';
+        state.error =
+          action.error.message ??
+          "An error occurred while creating the account";
+        state.status = "rejected";
       })
       // Edit account
       .addCase(
         editAccount.fulfilled,
         (state, action: PayloadAction<Account>) => {
           const updatedAccount = action.payload;
+          console.log(updatedAccount);
+          // Find the index of the updated account in the accounts array
           const index = state.accounts.findIndex(
             (account) => account.id === updatedAccount.id
           );
           if (index !== -1) {
+            // If the account exists, update it with the updated account
             state.accounts[index] = updatedAccount;
           }
         }
       )
       .addCase(editAccount.rejected, (state, action) => {
-        state.error = action.error.message ?? "An error occurred while editing the account";
+        state.error =
+          action.error.message ?? "An error occurred while editing the account";
       })
       // Delete account
       .addCase(deleteAccount.pending, (state) => {
         state.loading = true;
         state.error = null;
-        state.status = 'pending';
+        state.status = "pending";
       })
       .addCase(deleteAccount.fulfilled, (state, action) => {
         state.loading = false;
         state.error = null;
         const accountId = action.meta.arg; // Get the accountId from action.meta
-        state.accounts = state.accounts.filter(account => account.id !== accountId);
-        state.status = 'fulfilled';
+        state.accounts = state.accounts.filter(
+          (account) => account.id !== accountId
+        );
+        state.status = "fulfilled";
       })
       .addCase(deleteAccount.rejected, (state, action) => {
-        state.error = action.error.message ?? "An error occurred while deleting the account";
-        state.status = 'rejected';
-      })
-   
+        state.error =
+          action.error.message ??
+          "An error occurred while deleting the account";
+        state.status = "rejected";
+      });
   },
 });
 

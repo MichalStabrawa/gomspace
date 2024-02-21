@@ -1,7 +1,9 @@
+//AccountUserList.tsx modal edit delete transfer
+
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState, AppDispatch } from "../store/store";
-import { fetchAccounts, createAccount } from "../store/accountReducersSlice";
+import { fetchAccounts, createAccount ,editAccount } from "../store/accountReducersSlice";
 import { Account } from "../types/types";
 import classes from "./AccountUserList.module.scss";
 import { v4 as uuidv4 } from "uuid";
@@ -35,14 +37,23 @@ const AccountUserList: React.FC = () => {
     dispatch(fetchAccounts());
   }, [dispatch]);
 
-  const handleCreateAccount = () => {
+  const handleCreateAccount = async () => {
     if (newAccountData) {
       const { name, balance, currency } = newAccountData;
-
       const id = uuidv4(); // Generate UUID for id
       const ownerId = id + name;
-      dispatch(createAccount({ id, name, balance, currency, ownerId }));
-      setNewAccountData({ name: "", balance: 0, currency: "", ownerId: "" });
+  
+      try {
+        const createdAccountAction = await dispatch(createAccount({ id, name, balance, currency, ownerId }));
+        const createdAccount = createdAccountAction.payload as Account;
+      
+        // After createAccount thunk fulfills, dispatch editAccount thunk
+       // dispatch(editAccount({ accountId: createdAccount.id, updatedAccount: { ...createdAccount }}));
+      
+        setNewAccountData({ name: "", balance: 0, currency: "", ownerId: "" });
+      } catch (error) {
+        console.error('Error creating account:', error);
+      }
     }
   };
 
@@ -68,7 +79,18 @@ const AccountUserList: React.FC = () => {
     }));
   };
 
+  const handleEditAccount = () => {
+    dispatch(editAccount({ accountId: editData.id!, updatedAccount: editData }));
+    setIsOpen(false);
+  };
 
+  const handleEditInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setEditData((prevEditData) => ({
+      ...prevEditData,
+      [name]: name === "balance" ? parseFloat(value) : value,
+    }));
+  };
 
   return (
     <div className={classes.wrapper}>
@@ -97,8 +119,10 @@ const AccountUserList: React.FC = () => {
         id:editData.id!,
           name: editData.name!,
           balance: editData.balance!,
+          currency:editData.currency!
          
-        }} isOpen={isOpen} onClose={closeModal}/>
+        }} isOpen={isOpen} onClose={closeModal}   onEdit={handleEditAccount}
+        onInputChange={handleEditInputChange}/>
        
     </div>
   );
