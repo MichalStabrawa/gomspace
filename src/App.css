@@ -32,13 +32,14 @@
 }
 
 .input {
-  height: 35px;
+  height: 32px;
   border-radius: 8px;
   margin: 5px;
+  border-width: 1px;
 }
 
 .modal {
-  background-color: #61dafb;
+  background-color: #c6cecf;
   position: absolute;
   top: 0;
   width: 100%;
@@ -46,6 +47,7 @@
   padding-top: 20px;
   top: 0;
   padding: 20px;
+  margin-top:10px;
 }
 
 .modal-content {
@@ -63,7 +65,7 @@
 .close {
   font-size: 2rem;
   position: absolute;
-  right: 10px;
-  top: -30px;
+  right:0;
+  top: -20px;
   cursor: pointer;
 }

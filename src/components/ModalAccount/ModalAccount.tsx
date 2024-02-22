@@ -53,7 +53,7 @@ const AccountModal = ({
   const [isDeleting, setIsDeleting] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [transferAmount, setTransferAmount] = useState(0); // Track the transfer amount locally
-  const [destinationAccountId, setDestinationAccountId] = useState("");
+
   const [isTransferring, setIsTransferring] = useState(false);
   const [transferArray, setTransferArray] = useState<AccountTransfer[]>([]);
 
@@ -131,6 +131,7 @@ const AccountModal = ({
         }) as AppThunk<void>
       );
     }
+    setTransferAmount(0);
   };
   useEffect(() => {
     setTransferArray(filterWithoutExistingId());
@@ -210,39 +211,44 @@ const AccountModal = ({
             >
               {isDeleting ? "Deleting..." : "Delete"}
             </button>
-            <div>
-              <label>Transfer Amount:</label>
-              <input
-                className="input"
-                type="number"
-                value={transferAmount}
-                onChange={(e) => setTransferAmount(parseFloat(e.target.value))}
-              />
+            <div className={classes.transfer_wrapper}>
+              <div >
+                <div></div>
+                <label>Transfer Amount:</label>
+                <input
+                  className="input"
+                  type="number"
+                  value={transferAmount}
+                  onChange={(e) =>
+                    setTransferAmount(parseFloat(e.target.value))
+                  }
+                />
+              </div>
+              <div>
+                <label>User</label>
+                <select className={classes.select} onChange={handleUserTransferId}>
+                  {transferArray &&
+                    transferArray.map((el) => (
+                      <option
+                        key={el.id}
+                        value={el.id}
+                        data-balance={el.balance}
+                        data-currency={el.currency}
+                        data-name={el.name}
+                      >
+                        {el.name}
+                      </option>
+                    ))}
+                </select>
+              </div>
+              <button
+                onClick={handleTransferSave}
+                className={`${classes.button} ${classes.transfer}`}
+                disabled={isTransferring}
+              >
+                {isTransferring ? "Transferring..." : "Transfer"}
+              </button>
             </div>
-            <div>
-              <label>User</label>
-              <select className="input" onChange={handleUserTransferId}>
-                {transferArray &&
-                  transferArray.map((el) => (
-                    <option
-                      key={el.id}
-                      value={el.id}
-                      data-balance={el.balance}
-                      data-currency={el.currency}
-                      data-name={el.name}
-                    >
-                      {el.name}
-                    </option>
-                  ))}
-              </select>
-            </div>
-            <button
-              onClick={handleTransferSave}
-              className={`${classes.button} ${classes.transfer}`}
-              disabled={isTransferring}
-            >
-              {isTransferring ? "Transferring..." : "Transfer"}
-            </button>
             {error === "Insufficient balance" && (
               <p className={classes.error}> Somthing went wrong: {error}</p>
             )}
