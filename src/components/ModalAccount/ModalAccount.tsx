@@ -177,6 +177,7 @@ const AccountModal = ({
               name="currency"
               value={account.currency}
               onChange={onInputChange}
+              maxLength={3}
             />
             <button className={classes.button} onClick={handleSaveEdit}>
               Save
@@ -184,9 +185,21 @@ const AccountModal = ({
           </div>
         ) : (
           <div>
-            <p>
-              {account.name} {account.balance} {account.currency}
-            </p>
+            <table>
+              <tr>
+                <th>User Name</th>
+                <th>Balance</th>
+                <th>Currency</th>
+                <th>ID</th>
+              </tr>
+              <tr>
+                <td> {account.name}</td>
+                <td> {account.balance}</td>
+                <td>{account.currency}</td>
+                <td> {account.id}</td>
+              </tr>
+            </table>
+
             <button className={classes.button} onClick={handleEditToggle}>
               Edit
             </button>
@@ -207,13 +220,7 @@ const AccountModal = ({
               />
             </div>
             <div>
-              <label>Destination Account ID:</label>
-              <input
-                className="input"
-                type="text"
-                value={destinationAccountId}
-                onChange={(e) => setDestinationAccountId(e.target.value)}
-              />
+              <label>User</label>
               <select className="input" onChange={handleUserTransferId}>
                 {transferArray &&
                   transferArray.map((el) => (
@@ -236,7 +243,9 @@ const AccountModal = ({
             >
               {isTransferring ? "Transferring..." : "Transfer"}
             </button>
-            {transferBalanceState.length > 0 && transferBalanceState[0].name}
+            {error === "Insufficient balance" && (
+              <p className={classes.error}> Somthing went wrong: {error}</p>
+            )}
           </div>
         )}
       </div>

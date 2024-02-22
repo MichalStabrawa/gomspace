@@ -1,5 +1,10 @@
 // accountReducersSlice.ts
-import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
+import {
+  createSlice,
+  createAsyncThunk,
+  PayloadAction,
+ 
+} from "@reduxjs/toolkit";
 import {
   getAccounts,
   createAccount as createAccountAPI,
@@ -118,7 +123,7 @@ export const transferBalance = createAsyncThunk<
       // Return the transfer details
       return { fromAccountId, toAccountId, amount };
     } catch (error) {
-      return rejectWithValue((error as Error).message);
+     throw error;
     }
   }
 );
