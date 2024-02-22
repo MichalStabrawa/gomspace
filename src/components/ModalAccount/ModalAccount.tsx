@@ -1,6 +1,11 @@
-import React, { useState } from 'react';
-import { useDispatch } from 'react-redux';
-import { deleteAccount, editAccount } from '../../store/accountReducersSlice';
+import React, { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import {
+  deleteAccount,
+  editAccount,
+  transferBalance,
+} from "../../store/accountReducersSlice";
+import { RootState } from "../../store/store";
 
 interface AccountProps {
   isOpen: boolean;
@@ -9,27 +14,53 @@ interface AccountProps {
     name: string;
     id: string;
     balance: number;
-    currency:string
+    currency: string;
   };
   onEdit: () => void;
   onInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
-const AccountModal = ({ account, isOpen, onClose, onEdit, onInputChange }: AccountProps) => {
-  const [isDeleting, setIsDeleting] = useState(false); // Track the deletion state locally
-  const [isEditing, setIsEditing] = useState(false); // Track the editing state locally
+type AccountTransfer = {
+  name: string;
+  id: string;
+  balance: number;
+  currency: string;
+};
+
+const AccountModal = ({
+  account,
+  isOpen,
+  onClose,
+  onEdit,
+  onInputChange,
+}: AccountProps) => {
+  const { accounts, loading, error, status } = useSelector(
+    (state: RootState) => state.account
+  );
+  const [isDeleting, setIsDeleting] = useState(false); 
+  const [isEditing, setIsEditing] = useState(false); 
+  const [transferAmount, setTransferAmount] = useState(0); // Track the transfer amount locally
+  const [destinationAccountId, setDestinationAccountId] = useState(""); 
+  const [isTransferring, setIsTransferring] = useState(false); 
+  const [transferArray, setTransferArray] = useState<AccountTransfer[]>([]);
+  const [transferBalance,setTransferBalance] = useState<AccountTransfer[]>([])
+  console.log("Modal");
+  console.log(accounts);
+
+  console.log(`FilteredArrayTransfer `);
+  console.log(transferArray);
 
   const dispatch = useDispatch();
 
   const handleDelete = async () => {
-    setIsDeleting(true); 
+    setIsDeleting(true);
     try {
-      await dispatch(deleteAccount(account.id) as any); 
+      await dispatch(deleteAccount(account.id) as any);
       onClose();
     } catch (error) {
-      console.error('Error deleting account:', error);
+      console.error("Error deleting account:", error);
     } finally {
-      setIsDeleting(false); 
+      setIsDeleting(false);
     }
   };
 
@@ -42,26 +73,121 @@ const AccountModal = ({ account, isOpen, onClose, onEdit, onInputChange }: Accou
     setIsEditing(false);
   };
 
+  const handleUserTransferId = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const selectedOption = e.target.selectedOptions[0];
+    const selectedAccountId = selectedOption.value;
+    const selectedBalance = selectedOption.getAttribute('data-balance');
+    const selectedCurrency = selectedOption.getAttribute('data-currency');
+    const selectedName = selectedOption.getAttribute('data-name');
+  
+    const balance = selectedBalance ? Number(selectedBalance) : 0;
+    const currency = selectedCurrency || '';
+    const name = selectedName || '';
+  
+    setTransferBalance([
+      {
+        id: selectedAccountId,
+        balance: balance + transferAmount,
+        currency,
+        name,
+      },
+    ]);
+  };
+  console.log("Dest");
+  console.log(destinationAccountId);
+
+  const filterWithoutExistingId = () => {
+    const filteredArr = accounts.filter((el) => el.id !== account.id);
+
+    return filteredArr;
+  };
+
+  useEffect(() => {
+    setTransferArray(filterWithoutExistingId());
+  }, [account, accounts]);
+
+  useEffect(() => {
+    setTransferBalance(prevTransferBalance => (
+      prevTransferBalance.map(account => ({
+        ...account,
+        balance: account.balance + transferAmount
+      }))
+    ));
+  }, [transferAmount]);
   return (
-    <div className={`modal ${isOpen ? 'show' : 'hide'}`}>
+    <div className={`modal ${isOpen ? "show" : "hide"}`}>
       <div className="modal-content">
-        <span className="close" onClick={onClose}>&times;</span>
+        <span className="close" onClick={onClose}>
+          &times;
+        </span>
         <h2>Account Details</h2>
         {isEditing ? (
           <div>
             <label>Name:</label>
-            <input type="text" name="name" value={account.name} onChange={onInputChange} />
+            <input
+              type="text"
+              name="name"
+              value={account.name}
+              onChange={onInputChange}
+            />
             <label>Balance:</label>
-            <input type="number" name="balance" value={account.balance.toString()} onChange={onInputChange} />
+            <input
+              type="number"
+              name="balance"
+              value={account.balance.toString()}
+              onChange={onInputChange}
+            />
             <label>Currency:</label>
-            <input type="text" name="currency" value={account.currency} onChange={onInputChange} />
+            <input
+              type="text"
+              name="currency"
+              value={account.currency}
+              onChange={onInputChange}
+            />
             <button onClick={handleSaveEdit}>Save</button>
           </div>
         ) : (
           <div>
-            <p>{account.name} {account.balance} {account.currency}</p>
+            <p>
+              {account.name} {account.balance} {account.currency}
+            </p>
             <button onClick={handleEditToggle}>Edit</button>
-            <button onClick={handleDelete} disabled={isDeleting}>{isDeleting ? 'Deleting...' : 'Delete'}</button>
+            <button onClick={handleDelete} disabled={isDeleting}>
+              {isDeleting ? "Deleting..." : "Delete"}
+            </button>
+            <div>
+              <label>Transfer Amount:</label>
+              <input
+                type="number"
+                value={transferAmount}
+                onChange={(e) => setTransferAmount(parseFloat(e.target.value))}
+              />
+            </div>
+            <div>
+              <label>Destination Account ID:</label>
+              <input
+                type="text"
+                value={destinationAccountId}
+                onChange={(e) => setDestinationAccountId(e.target.value)}
+              />
+              <select onChange={handleUserTransferId}>
+                {transferArray &&
+                  transferArray.map((el) => (
+                    <option
+                      key={el.id}
+                      value={el.id}
+                      data-balance={el.balance}
+                      data-currency={el.currency}
+                      data-name={el.name}
+                    >
+                      {el.name}
+                    </option>
+                  ))}
+              </select>
+            </div>
+            <button disabled={isTransferring}>
+              {isTransferring ? "Transferring..." : "Transfer"}
+            </button>
           </div>
         )}
       </div>
