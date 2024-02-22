@@ -5,6 +5,7 @@ import {
   createAccount as createAccountAPI,
   editAccount as editAccountAPI,
   deleteAccountAPI,
+  transferBalance as transferBalanceAPI,
 } from "../services/accountServices";
 import { Account } from "../types/types";
 import { RootState } from "./store";
@@ -70,37 +71,55 @@ export const deleteAccount = createAsyncThunk<void, string>(
   }
 );
 
-// Transfer balance
-// Transfer balance
 export const transferBalance = createAsyncThunk<
-  void,
-  { fromAccountId: string; toAccountId: string; amount: number }
+  { fromAccountId: string; toAccountId: string; amount: number },
+  {
+    fromAccountId: string;
+    toAccountId: string;
+    amount: number;
+    initialAccounts: Account[];
+  },
+  {
+    state: RootState;
+    rejectValue: string;
+  }
 >(
   "account/transferBalance",
-  async ({ fromAccountId, toAccountId, amount }) => {
-    // Fetch accounts INCORECT NOW!!!! COULD BE CHANGE TO ACCOUNTS WITH STATE!!!!
-    const accounts = await getAccounts();
+  async (
+    { fromAccountId, toAccountId, amount, initialAccounts },
+    { getState, rejectWithValue }
+  ) => {
+    try {
+      const accounts = initialAccounts; // Using the passed initialAccounts directly
 
-    // Find the accounts to transfer from and to
-    const fromAccount = accounts.find((account) => account.id === fromAccountId);
-    const toAccount = accounts.find((account) => account.id === toAccountId);
+      const fromAccountIndex = accounts.findIndex(
+        (account) => account.id === fromAccountId
+      );
+      const toAccountIndex = accounts.findIndex(
+        (account) => account.id === toAccountId
+      );
 
-    if (!fromAccount || !toAccount) {
-      throw new Error("Accounts not found");
+      if (fromAccountIndex === -1 || toAccountIndex === -1) {
+        throw new Error("Accounts not found");
+      }
+
+      if (accounts[fromAccountIndex].balance < amount) {
+        throw new Error("Insufficient balance");
+      }
+
+      // Call the API to perform the balance transfer
+      await transferBalanceAPI(
+        fromAccountId,
+        toAccountId,
+        amount,
+        initialAccounts
+      );
+
+      // Return the transfer details
+      return { fromAccountId, toAccountId, amount };
+    } catch (error) {
+      return rejectWithValue((error as Error).message);
     }
-
-    // Check if there's enough balance in the 'from' account
-    if (fromAccount.balance < amount) {
-      throw new Error("Insufficient balance");
-    }
-
-    // Update the balances
-    const updatedFromAccount = { ...fromAccount, balance: fromAccount.balance - amount };
-    const updatedToAccount = { ...toAccount, balance: toAccount.balance + amount };
-
-    // Update the accounts in the backend
-    await editAccountAPI(fromAccountId, updatedFromAccount, accounts);
-    await editAccountAPI(toAccountId, updatedToAccount, accounts);
   }
 );
 
@@ -195,8 +214,33 @@ const accountSlice = createSlice({
           action.error.message ??
           "An error occurred while deleting the account";
         state.status = "rejected";
+      })
+      // Transfer balance
+      .addCase(transferBalance.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+        state.status = "pending";
+      })
+      .addCase(transferBalance.fulfilled, (state, action) => {
+        state.loading = false;
+        const { fromAccountId, toAccountId, amount } = action.payload;
+        state.accounts = state.accounts.map((account) => {
+          if (account.id === fromAccountId) {
+            return { ...account, balance: account.balance - amount };
+          } else if (account.id === toAccountId) {
+            return { ...account, balance: account.balance + amount };
+          }
+          return account;
+        });
+        state.status = "fulfilled";
+      })
+      .addCase(transferBalance.rejected, (state, action) => {
+        state.loading = false;
+        state.error =
+          action.error.message ??
+          "An error occurred while transferring balance";
+        state.status = "rejected";
       });
-      
   },
 });
 

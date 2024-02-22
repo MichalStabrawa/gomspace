@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { Dispatch, useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import classes from "./ModalAccount.module.scss";
 import {
@@ -7,7 +7,12 @@ import {
   transferBalance,
 } from "../../store/accountReducersSlice";
 import { RootState } from "../../store/store";
-import { PayloadAction } from "@reduxjs/toolkit";
+import {
+  Action,
+  PayloadAction,
+  ThunkAction,
+  ThunkDispatch,
+} from "@reduxjs/toolkit";
 
 interface AccountProps {
   isOpen: boolean;
@@ -21,6 +26,12 @@ interface AccountProps {
   onEdit: () => void;
   onInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }
+type AppThunk<ReturnType = void> = ThunkAction<
+  ReturnType,
+  RootState,
+  unknown,
+  Action<string>
+>;
 
 type AccountTransfer = {
   name: string;
@@ -49,13 +60,15 @@ const AccountModal = ({
   const [transferBalanceState, setTransferBalanceState] = useState<
     AccountTransfer[]
   >([]);
+
   console.log("Modal");
   console.log(accounts);
 
   console.log(`FilteredArrayTransfer `);
   console.log(transferArray);
 
-  const dispatch = useDispatch();
+  const dispatch =
+    useDispatch<ThunkDispatch<RootState, undefined, Action<string>>>();
 
   const handleDelete = async () => {
     setIsDeleting(true);
@@ -92,14 +105,14 @@ const AccountModal = ({
     setTransferBalanceState([
       {
         id: selectedAccountId,
-        balance: balance + transferAmount,
+        balance: balance,
         currency,
         name,
       },
     ]);
+
+    setTransferAmount(0);
   };
-  console.log("Dest");
-  console.log(destinationAccountId);
 
   const filterWithoutExistingId = () => {
     const filteredArr = accounts.filter((el) => el.id !== account.id);
@@ -107,18 +120,30 @@ const AccountModal = ({
     return filteredArr;
   };
 
+  const handleTransferSave = () => {
+    if (transferBalanceState.length > 0) {
+      dispatch(
+        transferBalance({
+          fromAccountId: account.id,
+          toAccountId: transferBalanceState[0].id,
+          amount: transferAmount,
+          initialAccounts: accounts, // Pass initial accounts here
+        }) as AppThunk<void>
+      );
+    }
+  };
   useEffect(() => {
     setTransferArray(filterWithoutExistingId());
   }, [account, accounts]);
 
-  useEffect(() => {
-    setTransferBalanceState((prevTransferBalance) =>
-      prevTransferBalance.map((account) => ({
-        ...account,
-        balance: account.balance + transferAmount,
-      }))
-    );
-  }, [transferAmount]);
+  // useEffect(() => {
+  //   setTransferBalanceState((prevTransferBalance) =>
+  //     prevTransferBalance.map((account) => ({
+  //       ...account,
+  //       balance: account.balance + transferAmount,
+  //     }))
+  //   );
+  // }, [transferAmount]);
 
   return (
     <div className={`modal ${isOpen ? "show" : "hide"}`}>
@@ -205,11 +230,13 @@ const AccountModal = ({
               </select>
             </div>
             <button
+              onClick={handleTransferSave}
               className={`${classes.button} ${classes.transfer}`}
               disabled={isTransferring}
             >
               {isTransferring ? "Transferring..." : "Transfer"}
             </button>
+            {transferBalanceState.length > 0 && transferBalanceState[0].name}
           </div>
         )}
       </div>
