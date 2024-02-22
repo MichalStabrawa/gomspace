@@ -19,7 +19,7 @@ let accounts: Account[] = [
 export const getAccounts = async (): Promise<Account[]> => {
   try {
     await new Promise((resolve) => setTimeout(resolve, 500));
-    console.log(accounts);
+
     return accounts;
   } catch (error) {
     console.error("Error fetching accounts:", error);
@@ -34,9 +34,8 @@ export const createAccount = async (
     await new Promise((resolve) => setTimeout(resolve, 500));
 
     const account = { ...newAccount } as Account;
-    console.log(`Account Create : ${account}`);
 
-    const updatedAccounts = [...accounts, account];
+    //const updatedAccounts = [...accounts, account];
 
     return account;
   } catch (error) {
@@ -53,9 +52,13 @@ export const editAccount = async (
   try {
     await new Promise((resolve) => setTimeout(resolve, 500));
     const index = stateAccount.findIndex((account) => account.id === accountId);
+
     if (index !== -1) {
+      console.log("Index");
+      console.log(index);
       // Create a new array with the updated account state
       const updatedAccounts = [...stateAccount];
+
       updatedAccounts[index] = {
         ...updatedAccounts[index],
         ...updatedAccount,
@@ -98,6 +101,46 @@ export const searchAccounts = async (
     return searchResults;
   } catch (error) {
     console.error("Error searching accounts:", error);
+    throw error;
+  }
+};
+
+export const transferBalance = async (
+  fromAccountId: string,
+  toAccountId: string,
+  amount: number,
+  initialAccounts: Account[]
+): Promise<Account[]> => {
+  try {
+    await new Promise((resolve) => setTimeout(resolve, 500));
+
+    // Find the accounts to transfer from and to
+    const fromAccountIndex = initialAccounts.findIndex((account) => account.id === fromAccountId);
+    const toAccountIndex = initialAccounts.findIndex((account) => account.id === toAccountId);
+
+    if (fromAccountIndex === -1 || toAccountIndex === -1) {
+      throw new Error("Accounts not found");
+    }
+
+    // Check if there's enough balance in the 'from' account
+    if (initialAccounts[fromAccountIndex].balance < amount) {
+      throw new Error("Insufficient balance");
+    }
+
+    // Update the balances
+    const updatedAccounts = [...initialAccounts]; // Create a copy of the initial accounts array
+    updatedAccounts[fromAccountIndex] = {
+      ...updatedAccounts[fromAccountIndex],
+      balance: updatedAccounts[fromAccountIndex].balance - amount
+    };
+    updatedAccounts[toAccountIndex] = {
+      ...updatedAccounts[toAccountIndex],
+      balance: updatedAccounts[toAccountIndex].balance + amount
+    };
+
+    return updatedAccounts;
+  } catch (error) {
+    console.error("Error transferring balance:", error);
     throw error;
   }
 };

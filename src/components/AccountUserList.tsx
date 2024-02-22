@@ -140,10 +140,14 @@ const AccountUserList: React.FC = () => {
           {data.length &&
             data.map((el) => (
               <li key={el.id}>
-                {el.name} {el.balance} {el.currency}
-                <button onClick={openModal} id={el.id}>
-                  Edit
-                </button>
+                <p className={classes.list_item}>
+                  <span>Name: {el.name} </span>{" "}
+                  <span>balance: {el.balance}</span>{" "}
+                  <span>currency: {el.currency}</span>{" "}
+                  <button onClick={openModal} id={el.id}>
+                    Edit
+                  </button>
+                </p>
               </li>
             ))}
         </ul>

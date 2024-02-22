@@ -1,10 +1,16 @@
 // accountReducersSlice.ts
-import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
+import {
+  createSlice,
+  createAsyncThunk,
+  PayloadAction,
+ 
+} from "@reduxjs/toolkit";
 import {
   getAccounts,
   createAccount as createAccountAPI,
   editAccount as editAccountAPI,
   deleteAccountAPI,
+  transferBalance as transferBalanceAPI,
 } from "../services/accountServices";
 import { Account } from "../types/types";
 import { RootState } from "./store";
@@ -70,13 +76,56 @@ export const deleteAccount = createAsyncThunk<void, string>(
   }
 );
 
-// Transfer balance
 export const transferBalance = createAsyncThunk<
-  void,
-  { fromAccountId: string; toAccountId: string; amount: number }
+  { fromAccountId: string; toAccountId: string; amount: number },
+  {
+    fromAccountId: string;
+    toAccountId: string;
+    amount: number;
+    initialAccounts: Account[];
+  },
+  {
+    state: RootState;
+    rejectValue: string;
+  }
 >(
   "account/transferBalance",
-  async ({ fromAccountId, toAccountId, amount }) => {}
+  async (
+    { fromAccountId, toAccountId, amount, initialAccounts },
+    { getState, rejectWithValue }
+  ) => {
+    try {
+      const accounts = initialAccounts; // Using the passed initialAccounts directly
+
+      const fromAccountIndex = accounts.findIndex(
+        (account) => account.id === fromAccountId
+      );
+      const toAccountIndex = accounts.findIndex(
+        (account) => account.id === toAccountId
+      );
+
+      if (fromAccountIndex === -1 || toAccountIndex === -1) {
+        throw new Error("Accounts not found");
+      }
+
+      if (accounts[fromAccountIndex].balance < amount) {
+        throw new Error("Insufficient balance");
+      }
+
+      // Call the API to perform the balance transfer
+      await transferBalanceAPI(
+        fromAccountId,
+        toAccountId,
+        amount,
+        initialAccounts
+      );
+
+      // Return the transfer details
+      return { fromAccountId, toAccountId, amount };
+    } catch (error) {
+     throw error;
+    }
+  }
 );
 
 // Redux Slice
@@ -169,6 +218,32 @@ const accountSlice = createSlice({
         state.error =
           action.error.message ??
           "An error occurred while deleting the account";
+        state.status = "rejected";
+      })
+      // Transfer balance
+      .addCase(transferBalance.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+        state.status = "pending";
+      })
+      .addCase(transferBalance.fulfilled, (state, action) => {
+        state.loading = false;
+        const { fromAccountId, toAccountId, amount } = action.payload;
+        state.accounts = state.accounts.map((account) => {
+          if (account.id === fromAccountId) {
+            return { ...account, balance: account.balance - amount };
+          } else if (account.id === toAccountId) {
+            return { ...account, balance: account.balance + amount };
+          }
+          return account;
+        });
+        state.status = "fulfilled";
+      })
+      .addCase(transferBalance.rejected, (state, action) => {
+        state.loading = false;
+        state.error =
+          action.error.message ??
+          "An error occurred while transferring balance";
         state.status = "rejected";
       });
   },

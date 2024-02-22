@@ -1,11 +1,18 @@
-import React, { useEffect, useState } from "react";
+import React, { Dispatch, useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import classes from "./ModalAccount.module.scss";
 import {
   deleteAccount,
   editAccount,
   transferBalance,
 } from "../../store/accountReducersSlice";
 import { RootState } from "../../store/store";
+import {
+  Action,
+  PayloadAction,
+  ThunkAction,
+  ThunkDispatch,
+} from "@reduxjs/toolkit";
 
 interface AccountProps {
   isOpen: boolean;
@@ -19,6 +26,12 @@ interface AccountProps {
   onEdit: () => void;
   onInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }
+type AppThunk<ReturnType = void> = ThunkAction<
+  ReturnType,
+  RootState,
+  unknown,
+  Action<string>
+>;
 
 type AccountTransfer = {
   name: string;
@@ -37,20 +50,25 @@ const AccountModal = ({
   const { accounts, loading, error, status } = useSelector(
     (state: RootState) => state.account
   );
-  const [isDeleting, setIsDeleting] = useState(false); 
-  const [isEditing, setIsEditing] = useState(false); 
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const [transferAmount, setTransferAmount] = useState(0); // Track the transfer amount locally
-  const [destinationAccountId, setDestinationAccountId] = useState(""); 
-  const [isTransferring, setIsTransferring] = useState(false); 
+
+  const [isTransferring, setIsTransferring] = useState(false);
   const [transferArray, setTransferArray] = useState<AccountTransfer[]>([]);
-  const [transferBalance,setTransferBalance] = useState<AccountTransfer[]>([])
+
+  const [transferBalanceState, setTransferBalanceState] = useState<
+    AccountTransfer[]
+  >([]);
+
   console.log("Modal");
   console.log(accounts);
 
   console.log(`FilteredArrayTransfer `);
   console.log(transferArray);
 
-  const dispatch = useDispatch();
+  const dispatch =
+    useDispatch<ThunkDispatch<RootState, undefined, Action<string>>>();
 
   const handleDelete = async () => {
     setIsDeleting(true);
@@ -76,25 +94,25 @@ const AccountModal = ({
   const handleUserTransferId = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const selectedOption = e.target.selectedOptions[0];
     const selectedAccountId = selectedOption.value;
-    const selectedBalance = selectedOption.getAttribute('data-balance');
-    const selectedCurrency = selectedOption.getAttribute('data-currency');
-    const selectedName = selectedOption.getAttribute('data-name');
-  
+    const selectedBalance = selectedOption.getAttribute("data-balance");
+    const selectedCurrency = selectedOption.getAttribute("data-currency");
+    const selectedName = selectedOption.getAttribute("data-name");
+
     const balance = selectedBalance ? Number(selectedBalance) : 0;
-    const currency = selectedCurrency || '';
-    const name = selectedName || '';
-  
-    setTransferBalance([
+    const currency = selectedCurrency || "";
+    const name = selectedName || "";
+
+    setTransferBalanceState([
       {
         id: selectedAccountId,
-        balance: balance + transferAmount,
+        balance: balance,
         currency,
         name,
       },
     ]);
+
+    setTransferAmount(0);
   };
-  console.log("Dest");
-  console.log(destinationAccountId);
 
   const filterWithoutExistingId = () => {
     const filteredArr = accounts.filter((el) => el.id !== account.id);
@@ -102,18 +120,32 @@ const AccountModal = ({
     return filteredArr;
   };
 
+  const handleTransferSave = () => {
+    if (transferBalanceState.length > 0) {
+      dispatch(
+        transferBalance({
+          fromAccountId: account.id,
+          toAccountId: transferBalanceState[0].id,
+          amount: transferAmount,
+          initialAccounts: accounts, // Pass initial accounts here
+        }) as AppThunk<void>
+      );
+    }
+    setTransferAmount(0);
+  };
   useEffect(() => {
     setTransferArray(filterWithoutExistingId());
   }, [account, accounts]);
 
-  useEffect(() => {
-    setTransferBalance(prevTransferBalance => (
-      prevTransferBalance.map(account => ({
-        ...account,
-        balance: account.balance + transferAmount
-      }))
-    ));
-  }, [transferAmount]);
+  // useEffect(() => {
+  //   setTransferBalanceState((prevTransferBalance) =>
+  //     prevTransferBalance.map((account) => ({
+  //       ...account,
+  //       balance: account.balance + transferAmount,
+  //     }))
+  //   );
+  // }, [transferAmount]);
+
   return (
     <div className={`modal ${isOpen ? "show" : "hide"}`}>
       <div className="modal-content">
@@ -125,6 +157,7 @@ const AccountModal = ({
           <div>
             <label>Name:</label>
             <input
+              className="input"
               type="text"
               name="name"
               value={account.name}
@@ -132,6 +165,7 @@ const AccountModal = ({
             />
             <label>Balance:</label>
             <input
+              className="input"
               type="number"
               name="balance"
               value={account.balance.toString()}
@@ -139,55 +173,85 @@ const AccountModal = ({
             />
             <label>Currency:</label>
             <input
+              className="input"
               type="text"
               name="currency"
               value={account.currency}
               onChange={onInputChange}
+              maxLength={3}
             />
-            <button onClick={handleSaveEdit}>Save</button>
+            <button className={classes.button} onClick={handleSaveEdit}>
+              Save
+            </button>
           </div>
         ) : (
           <div>
-            <p>
-              {account.name} {account.balance} {account.currency}
-            </p>
-            <button onClick={handleEditToggle}>Edit</button>
-            <button onClick={handleDelete} disabled={isDeleting}>
+            <table>
+              <tr>
+                <th>User Name</th>
+                <th>Balance</th>
+                <th>Currency</th>
+                <th>ID</th>
+              </tr>
+              <tr>
+                <td> {account.name}</td>
+                <td> {account.balance}</td>
+                <td>{account.currency}</td>
+                <td> {account.id}</td>
+              </tr>
+            </table>
+
+            <button className={classes.button} onClick={handleEditToggle}>
+              Edit
+            </button>
+            <button
+              className={`${classes.button} ${classes.delete}`}
+              onClick={handleDelete}
+              disabled={isDeleting}
+            >
               {isDeleting ? "Deleting..." : "Delete"}
             </button>
-            <div>
-              <label>Transfer Amount:</label>
-              <input
-                type="number"
-                value={transferAmount}
-                onChange={(e) => setTransferAmount(parseFloat(e.target.value))}
-              />
+            <div className={classes.transfer_wrapper}>
+              <div >
+                <div></div>
+                <label>Transfer Amount:</label>
+                <input
+                  className="input"
+                  type="number"
+                  value={transferAmount}
+                  onChange={(e) =>
+                    setTransferAmount(parseFloat(e.target.value))
+                  }
+                />
+              </div>
+              <div>
+                <label>User</label>
+                <select className={classes.select} onChange={handleUserTransferId}>
+                  {transferArray &&
+                    transferArray.map((el) => (
+                      <option
+                        key={el.id}
+                        value={el.id}
+                        data-balance={el.balance}
+                        data-currency={el.currency}
+                        data-name={el.name}
+                      >
+                        {el.name}
+                      </option>
+                    ))}
+                </select>
+              </div>
+              <button
+                onClick={handleTransferSave}
+                className={`${classes.button} ${classes.transfer}`}
+                disabled={isTransferring}
+              >
+                {isTransferring ? "Transferring..." : "Transfer"}
+              </button>
             </div>
-            <div>
-              <label>Destination Account ID:</label>
-              <input
-                type="text"
-                value={destinationAccountId}
-                onChange={(e) => setDestinationAccountId(e.target.value)}
-              />
-              <select onChange={handleUserTransferId}>
-                {transferArray &&
-                  transferArray.map((el) => (
-                    <option
-                      key={el.id}
-                      value={el.id}
-                      data-balance={el.balance}
-                      data-currency={el.currency}
-                      data-name={el.name}
-                    >
-                      {el.name}
-                    </option>
-                  ))}
-              </select>
-            </div>
-            <button disabled={isTransferring}>
-              {isTransferring ? "Transferring..." : "Transfer"}
-            </button>
+            {error === "Insufficient balance" && (
+              <p className={classes.error}> Somthing went wrong: {error}</p>
+            )}
           </div>
         )}
       </div>
