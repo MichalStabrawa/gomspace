@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { useDispatch,useSelector } from "react-redux";
+import React, { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import {
   deleteAccount,
   editAccount,
@@ -20,6 +20,13 @@ interface AccountProps {
   onInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
+type AccountTransfer = {
+  name: string;
+  id: string;
+  balance: number;
+  currency: string;
+};
+
 const AccountModal = ({
   account,
   isOpen,
@@ -27,16 +34,21 @@ const AccountModal = ({
   onEdit,
   onInputChange,
 }: AccountProps) => {
-  const { accounts, loading, error,status } = useSelector(
+  const { accounts, loading, error, status } = useSelector(
     (state: RootState) => state.account
   );
-  const [isDeleting, setIsDeleting] = useState(false); // Track the deletion state locally
-  const [isEditing, setIsEditing] = useState(false); // Track the editing state locally
+  const [isDeleting, setIsDeleting] = useState(false); 
+  const [isEditing, setIsEditing] = useState(false); 
   const [transferAmount, setTransferAmount] = useState(0); // Track the transfer amount locally
-  const [destinationAccountId, setDestinationAccountId] = useState(""); // Track the destination account ID locally
-  const [isTransferring, setIsTransferring] = useState(true); // Track the transfer state locally
-  console.log('Modal');
-  console.log(account)
+  const [destinationAccountId, setDestinationAccountId] = useState(""); 
+  const [isTransferring, setIsTransferring] = useState(false); 
+  const [transferArray, setTransferArray] = useState<AccountTransfer[]>([]);
+  const [transferBalance,setTransferBalance] = useState<AccountTransfer[]>([])
+  console.log("Modal");
+  console.log(accounts);
+
+  console.log(`FilteredArrayTransfer `);
+  console.log(transferArray);
 
   const dispatch = useDispatch();
 
@@ -61,6 +73,47 @@ const AccountModal = ({
     setIsEditing(false);
   };
 
+  const handleUserTransferId = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const selectedOption = e.target.selectedOptions[0];
+    const selectedAccountId = selectedOption.value;
+    const selectedBalance = selectedOption.getAttribute('data-balance');
+    const selectedCurrency = selectedOption.getAttribute('data-currency');
+    const selectedName = selectedOption.getAttribute('data-name');
+  
+    const balance = selectedBalance ? Number(selectedBalance) : 0;
+    const currency = selectedCurrency || '';
+    const name = selectedName || '';
+  
+    setTransferBalance([
+      {
+        id: selectedAccountId,
+        balance: balance + transferAmount,
+        currency,
+        name,
+      },
+    ]);
+  };
+  console.log("Dest");
+  console.log(destinationAccountId);
+
+  const filterWithoutExistingId = () => {
+    const filteredArr = accounts.filter((el) => el.id !== account.id);
+
+    return filteredArr;
+  };
+
+  useEffect(() => {
+    setTransferArray(filterWithoutExistingId());
+  }, [account, accounts]);
+
+  useEffect(() => {
+    setTransferBalance(prevTransferBalance => (
+      prevTransferBalance.map(account => ({
+        ...account,
+        balance: account.balance + transferAmount
+      }))
+    ));
+  }, [transferAmount]);
   return (
     <div className={`modal ${isOpen ? "show" : "hide"}`}>
       <div className="modal-content">
@@ -117,6 +170,20 @@ const AccountModal = ({
                 value={destinationAccountId}
                 onChange={(e) => setDestinationAccountId(e.target.value)}
               />
+              <select onChange={handleUserTransferId}>
+                {transferArray &&
+                  transferArray.map((el) => (
+                    <option
+                      key={el.id}
+                      value={el.id}
+                      data-balance={el.balance}
+                      data-currency={el.currency}
+                      data-name={el.name}
+                    >
+                      {el.name}
+                    </option>
+                  ))}
+              </select>
             </div>
             <button disabled={isTransferring}>
               {isTransferring ? "Transferring..." : "Transfer"}

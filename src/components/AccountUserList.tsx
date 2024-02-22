@@ -119,20 +119,23 @@ const AccountUserList: React.FC = () => {
     const searchTerm = e.target.value;
     //search by
     if (data) {
-        const searchArr = data.filter(el => el.name.includes(searchTerm));
-        console.log(searchArr);
-        setData(searchArr)
+      const searchArr = data.filter((el) => el.name.includes(searchTerm));
+      console.log(searchArr);
+      setData(searchArr);
     }
-    if(searchTerm==='') {
-      setData(accounts)
+    if (searchTerm === "") {
+      setData(accounts);
     }
-};
+  };
 
   return (
     <div className={classes.wrapper}>
       <h2>Accounts</h2>
       <section>
-        <div><input type="search" onChange={searchUser}/><label>Search</label></div>
+        <div className={classes.search_wrapper}>
+          <input className="input" type="search" onChange={searchUser} />
+          <label>Search</label>
+        </div>
         <ul className={classes.list}>
           {data.length &&
             data.map((el) => (
