@@ -117,11 +117,14 @@ const AccountUserList: React.FC = () => {
 
   const searchUser = (e: React.ChangeEvent<HTMLInputElement>) => {
     const searchTerm = e.target.value;
-    //search by name
+    //search by
     if (data) {
         const searchArr = data.filter(el => el.name.includes(searchTerm));
         console.log(searchArr);
         setData(searchArr)
+    }
+    if(searchTerm==='') {
+      setData(accounts)
     }
 };
 
