@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import classes from "./ModalAccount.module.scss";
 import {
   deleteAccount,
   editAccount,
   transferBalance,
 } from "../../store/accountReducersSlice";
 import { RootState } from "../../store/store";
+import { PayloadAction } from "@reduxjs/toolkit";
 
 interface AccountProps {
   isOpen: boolean;
@@ -37,13 +39,16 @@ const AccountModal = ({
   const { accounts, loading, error, status } = useSelector(
     (state: RootState) => state.account
   );
-  const [isDeleting, setIsDeleting] = useState(false); 
-  const [isEditing, setIsEditing] = useState(false); 
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const [transferAmount, setTransferAmount] = useState(0); // Track the transfer amount locally
-  const [destinationAccountId, setDestinationAccountId] = useState(""); 
-  const [isTransferring, setIsTransferring] = useState(false); 
+  const [destinationAccountId, setDestinationAccountId] = useState("");
+  const [isTransferring, setIsTransferring] = useState(false);
   const [transferArray, setTransferArray] = useState<AccountTransfer[]>([]);
-  const [transferBalance,setTransferBalance] = useState<AccountTransfer[]>([])
+
+  const [transferBalanceState, setTransferBalanceState] = useState<
+    AccountTransfer[]
+  >([]);
   console.log("Modal");
   console.log(accounts);
 
@@ -76,15 +81,15 @@ const AccountModal = ({
   const handleUserTransferId = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const selectedOption = e.target.selectedOptions[0];
     const selectedAccountId = selectedOption.value;
-    const selectedBalance = selectedOption.getAttribute('data-balance');
-    const selectedCurrency = selectedOption.getAttribute('data-currency');
-    const selectedName = selectedOption.getAttribute('data-name');
-  
+    const selectedBalance = selectedOption.getAttribute("data-balance");
+    const selectedCurrency = selectedOption.getAttribute("data-currency");
+    const selectedName = selectedOption.getAttribute("data-name");
+
     const balance = selectedBalance ? Number(selectedBalance) : 0;
-    const currency = selectedCurrency || '';
-    const name = selectedName || '';
-  
-    setTransferBalance([
+    const currency = selectedCurrency || "";
+    const name = selectedName || "";
+
+    setTransferBalanceState([
       {
         id: selectedAccountId,
         balance: balance + transferAmount,
@@ -107,13 +112,14 @@ const AccountModal = ({
   }, [account, accounts]);
 
   useEffect(() => {
-    setTransferBalance(prevTransferBalance => (
-      prevTransferBalance.map(account => ({
+    setTransferBalanceState((prevTransferBalance) =>
+      prevTransferBalance.map((account) => ({
         ...account,
-        balance: account.balance + transferAmount
+        balance: account.balance + transferAmount,
       }))
-    ));
+    );
   }, [transferAmount]);
+
   return (
     <div className={`modal ${isOpen ? "show" : "hide"}`}>
       <div className="modal-content">
@@ -125,6 +131,7 @@ const AccountModal = ({
           <div>
             <label>Name:</label>
             <input
+              className="input"
               type="text"
               name="name"
               value={account.name}
@@ -132,6 +139,7 @@ const AccountModal = ({
             />
             <label>Balance:</label>
             <input
+              className="input"
               type="number"
               name="balance"
               value={account.balance.toString()}
@@ -139,25 +147,35 @@ const AccountModal = ({
             />
             <label>Currency:</label>
             <input
+              className="input"
               type="text"
               name="currency"
               value={account.currency}
               onChange={onInputChange}
             />
-            <button onClick={handleSaveEdit}>Save</button>
+            <button className={classes.button} onClick={handleSaveEdit}>
+              Save
+            </button>
           </div>
         ) : (
           <div>
             <p>
               {account.name} {account.balance} {account.currency}
             </p>
-            <button onClick={handleEditToggle}>Edit</button>
-            <button onClick={handleDelete} disabled={isDeleting}>
+            <button className={classes.button} onClick={handleEditToggle}>
+              Edit
+            </button>
+            <button
+              className={`${classes.button} ${classes.delete}`}
+              onClick={handleDelete}
+              disabled={isDeleting}
+            >
               {isDeleting ? "Deleting..." : "Delete"}
             </button>
             <div>
               <label>Transfer Amount:</label>
               <input
+                className="input"
                 type="number"
                 value={transferAmount}
                 onChange={(e) => setTransferAmount(parseFloat(e.target.value))}
@@ -166,11 +184,12 @@ const AccountModal = ({
             <div>
               <label>Destination Account ID:</label>
               <input
+                className="input"
                 type="text"
                 value={destinationAccountId}
                 onChange={(e) => setDestinationAccountId(e.target.value)}
               />
-              <select onChange={handleUserTransferId}>
+              <select className="input" onChange={handleUserTransferId}>
                 {transferArray &&
                   transferArray.map((el) => (
                     <option
@@ -185,7 +204,10 @@ const AccountModal = ({
                   ))}
               </select>
             </div>
-            <button disabled={isTransferring}>
+            <button
+              className={`${classes.button} ${classes.transfer}`}
+              disabled={isTransferring}
+            >
               {isTransferring ? "Transferring..." : "Transfer"}
             </button>
           </div>

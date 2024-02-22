@@ -36,7 +36,7 @@ export const createAccount = async (
     const account = { ...newAccount } as Account;
     console.log(`Account Create : ${account}`);
 
-    const updatedAccounts = [...accounts, account];
+    //const updatedAccounts = [...accounts, account];
 
     return account;
   } catch (error) {
@@ -53,9 +53,13 @@ export const editAccount = async (
   try {
     await new Promise((resolve) => setTimeout(resolve, 500));
     const index = stateAccount.findIndex((account) => account.id === accountId);
+ 
     if (index !== -1) {
+      console.log('Index');
+      console.log(index)
       // Create a new array with the updated account state
       const updatedAccounts = [...stateAccount];
+   
       updatedAccounts[index] = {
         ...updatedAccounts[index],
         ...updatedAccount,
@@ -101,3 +105,5 @@ export const searchAccounts = async (
     throw error;
   }
 };
+
+

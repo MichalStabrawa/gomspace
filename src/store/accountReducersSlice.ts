@@ -71,12 +71,37 @@ export const deleteAccount = createAsyncThunk<void, string>(
 );
 
 // Transfer balance
+// Transfer balance
 export const transferBalance = createAsyncThunk<
   void,
   { fromAccountId: string; toAccountId: string; amount: number }
 >(
   "account/transferBalance",
-  async ({ fromAccountId, toAccountId, amount }) => {}
+  async ({ fromAccountId, toAccountId, amount }) => {
+    // Fetch accounts INCORECT NOW!!!! COULD BE CHANGE TO ACCOUNTS WITH STATE!!!!
+    const accounts = await getAccounts();
+
+    // Find the accounts to transfer from and to
+    const fromAccount = accounts.find((account) => account.id === fromAccountId);
+    const toAccount = accounts.find((account) => account.id === toAccountId);
+
+    if (!fromAccount || !toAccount) {
+      throw new Error("Accounts not found");
+    }
+
+    // Check if there's enough balance in the 'from' account
+    if (fromAccount.balance < amount) {
+      throw new Error("Insufficient balance");
+    }
+
+    // Update the balances
+    const updatedFromAccount = { ...fromAccount, balance: fromAccount.balance - amount };
+    const updatedToAccount = { ...toAccount, balance: toAccount.balance + amount };
+
+    // Update the accounts in the backend
+    await editAccountAPI(fromAccountId, updatedFromAccount, accounts);
+    await editAccountAPI(toAccountId, updatedToAccount, accounts);
+  }
 );
 
 // Redux Slice
@@ -171,6 +196,7 @@ const accountSlice = createSlice({
           "An error occurred while deleting the account";
         state.status = "rejected";
       });
+      
   },
 });
 
